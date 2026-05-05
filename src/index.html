@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Maps Lead Scraper</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">📍</div>
+                <span>Lead Scraper</span>
+            </div>
+
+            <nav class="nav">
+                <button class="nav-item active" data-tab="scraper">
+                    <span class="nav-icon">🔍</span>
+                    <span>Quét dữ liệu</span>
+                </button>
+                <button class="nav-item" data-tab="leads">
+                    <span class="nav-icon">👥</span>
+                    <span>Danh sách Lead</span>
+                </button>
+                <button class="nav-item" data-tab="history">
+                    <span class="nav-icon">📜</span>
+                    <span>Lịch sử</span>
+                </button>
+                <button class="nav-item" data-tab="states">
+                    <span class="nav-icon">💾</span>
+                    <span>Session</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-stats">
+                <div class="stat-item">
+                    <span class="stat-value" id="totalLeads">0</span>
+                    <span class="stat-label">Tổng Lead</span>
+                </div>
+                <div class="stat-item highlight">
+                    <span class="stat-value" id="noWebsiteCount">0</span>
+                    <span class="stat-label">Chưa có Website</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="hasPhoneCount">0</span>
+                    <span class="stat-label">Có SĐT</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="contactedCount">0</span>
+                    <span class="stat-label">Đã liên hệ</span>
+                </div>
+
+            </div>
+
+            <div class="mobile-access">
+                <div class="mobile-access-title">Mobile URL</div>
+                <a id="mobileUrl" class="mobile-access-link" href="#">Đang khởi động...</a>
+                <button class="btn btn-secondary mobile-copy-btn" id="copyMobileUrlBtn" type="button">Copy URL</button>
+                <div class="mobile-access-hint">Điện thoại và laptop cần dùng chung Wi-Fi.</div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Scraper Tab -->
+            <section class="tab-content active" id="tab-scraper">
+                <header class="content-header">
+                    <h1>🔍 Quét dữ liệu từ Google Maps</h1>
+                    <p>Tìm kiếm và thu thập thông tin doanh nghiệp tiềm năng</p>
+                </header>
+
+                <div class="scraper-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="keyword">
+                                <span class="label-icon">🏷️</span>
+                                Từ khóa tìm kiếm
+                            </label>
+                            <input type="text" id="keyword"
+                                placeholder="VD: quán cafe, spa, shop thờ trang, nhà hàng..." />
+                        </div>
+                        <div class="form-group">
+                            <label for="location">
+                                <span class="label-icon">📍</span>
+                                Vị trí
+                            </label>
+                            <input type="text" id="location" placeholder="VD: Quận 1 TP.HCM, Hà Nội, Đà Nẵng..." />
+                        </div>
+                        <div class="form-group small">
+                            <label for="limit">
+                                <span class="label-icon">🔢</span>
+                                Số lượng
+                            </label>
+                            <input type="number" id="limit" value="20" min="5" max="100" />
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="scrapeMode">
+                                <span class="label-icon">⚙️</span>
+                                Chế độ quét
+                            </label>
+                            <select id="scrapeMode" class="form-select">
+                                <option value="all">Quét tất cả cửa hàng</option>
+                                <option value="no_website">Chỉ quét cửa hàng KHÔNG có website</option>
+                                <option value="only_phone">Chỉ quét cửa hàng CÓ số điện thoại</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="btn btn-primary btn-large" id="startBtn">
+                            <span class="btn-icon">▶️</span>
+                            Bắt đầu quét
+                        </button>
+                        <button class="btn btn-danger btn-large" id="stopBtn" disabled>
+                            <span class="btn-icon">⏹️</span>
+                            Dừng
+                        </button>
+                        <button class="btn btn-warning btn-large hidden" id="resumeBtn">
+                            <span class="btn-icon">🔄</span>
+                            Resume
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Progress -->
+                <div class="progress-section" id="progressSection" style="display: none;">
+                    <div class="progress-header">
+                        <span class="progress-status" id="progressStatus">Đang khởi tạo...</span>
+                        <span class="progress-count" id="progressCount">0 / 0</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-stats" id="progressStats"></div>
+                </div>
+
+                <!-- Results -->
+                <div class="results-section" id="resultsSection" style="display: none;">
+                    <div class="results-header">
+                        <h2>📊 Kết quả thu thập</h2>
+                        <div class="results-actions">
+                            <button class="btn btn-success" id="exportExcelBtn">
+                                <span>📥</span> Export Excel
+                            </button>
+                            <button class="btn btn-secondary" id="exportCsvBtn">
+                                <span>📄</span> Export CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="filters">
+                        <label class="filter-checkbox">
+                            <input type="checkbox" id="filterNoWebsite" />
+                            <span class="checkmark"></span>
+                            <span>Chỉ hiển thị DN chưa có website</span>
+                        </label>
+                        <span class="result-count" id="filteredCount"></span>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table" id="resultsTable">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Tên doanh nghiệp</th>
+                                    <th>Địa chỉ</th>
+                                    <th>SĐT</th>
+                                    <th>Website</th>
+                                    <th>Rating</th>
+                                    <th>Loại hình</th>
+                                    <th>Xóa</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Leads Tab -->
+            <section class="tab-content" id="tab-leads">
+                <header class="content-header">
+                    <h1>👥 Tất cả Lead đã thu thập</h1>
+                    <p>Danh sách tất cả khách hàng tiềm năng</p>
+                </header>
+
+                <div class="results-section" style="display: block;">
+                    <div class="results-header">
+                        <div class="filters">
+                            <label class="filter-checkbox">
+                                <input type="checkbox" id="filterNoWebsiteAll" />
+                                <span class="checkmark"></span>
+                                <span>Chưa có website</span>
+                            </label>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" id="filterHasPhone" />
+                                <span class="checkmark"></span>
+                                <span>Có SĐT</span>
+                            </label>
+                            <label class="filter-checkbox">
+                                <input type="checkbox" id="filterContacted" />
+                                <span class="checkmark"></span>
+                                <span>Chưa liên hệ</span>
+                            </label>
+                        </div>
+                        <div class="results-actions">
+                            <button class="btn btn-success" id="exportAllExcelBtn">
+                                <span>📥</span> Export All Excel
+                            </button>
+                            <button class="btn btn-secondary" id="exportAllCsvBtn">
+                                <span>📄</span> Export All CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table" id="allLeadsTable">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Tên doanh nghiệp</th>
+                                    <th>Địa chỉ</th>
+                                    <th>SĐT</th>
+                                    <th>Website</th>
+                                    <th>Rating</th>
+                                    <th>Nguồn</th>
+                                    <th>Đã liên hệ</th>
+                                    <th>Xóa</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allLeadsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- History Tab -->
+            <section class="tab-content" id="tab-history">
+                <header class="content-header">
+                    <h1>📜 Lịch sử tìm kiếm</h1>
+                    <p>Xem lại các lần quét trước đó</p>
+                </header>
+
+                <div class="history-list" id="historyList">
+                    <!-- History items will be inserted here -->
+                </div>
+            </section>
+
+            <!-- Scrape States Tab -->
+            <section class="tab-content" id="tab-states">
+                <header class="content-header">
+                    <h1>💾 Session quét</h1>
+                    <p>Quản lý các session quét chưa hoàn thành</p>
+                </header>
+
+                <div class="states-actions">
+                    <button class="btn btn-secondary" id="cleanupStatesBtn">
+                        <span>🧹</span> Dọn dẹp session cũ (>7 ngày)
+                    </button>
+                </div>
+
+                <div class="states-list" id="statesList">
+                    <!-- State items will be inserted here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Website Modal -->
+    <div id="websiteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="modalTitle">Website</span>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+                <button class="external-btn" id="openExternalBtn" title="Mở trong trình duyệt">&#x1F855;</button>
+            </div>
+            <webview id="websiteFrame" src=""></webview>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+
+</html>

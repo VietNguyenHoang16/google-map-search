@@ -1,0 +1,15 @@
+node_modules/
+.kilo/
+.env
+.env.*
+!.env.example
+
+data/
+exports/
+*.log
+
+run_dev.log
+run_device.log
+
+Thumbs.db
+.DS_Store

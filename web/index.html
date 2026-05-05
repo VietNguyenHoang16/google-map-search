@@ -1,0 +1,129 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lead Scraper</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app">
+        <header class="app-header">
+            <h1>📍 Lead Scraper</h1>
+            <div class="header-stats">
+                <span class="stat-badge">
+                    <span id="totalLeads">0</span> Lead
+                </span>
+                <span class="stat-badge warning">
+                    <span id="noWebsiteCount">0</span> chưa web
+                </span>
+                <span class="stat-badge success">
+                    <span id="contactedCount">0</span> đã gọi
+                </span>
+            </div>
+            <div class="api-config" id="apiConfig">
+                <input type="url" id="apiBaseInput" placeholder="API HTTPS, ví dụ https://abc.trycloudflare.com">
+                <button type="button" id="saveApiBaseBtn">Lưu API</button>
+            </div>
+        </header>
+
+        <nav class="bottom-nav">
+            <button class="nav-btn" data-tab="scraper">
+                <span class="nav-icon">🔍</span>
+                <span>Quét</span>
+            </button>
+            <button class="nav-btn active" data-tab="leads">
+                <span class="nav-icon">👥</span>
+                <span>Lead</span>
+            </button>
+            <button class="nav-btn" data-tab="history">
+                <span class="nav-icon">📜</span>
+                <span>Lịch sử</span>
+            </button>
+        </nav>
+
+        <main class="main-content">
+            <section class="tab-content" id="tab-scraper">
+                <div class="card">
+                    <h2>Tìm kiếm</h2>
+                    <div class="form-group">
+                        <input type="text" id="keyword" placeholder="Từ khóa: quán cafe, spa...">
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="location" placeholder="Vị trí: Quận 1 TP.HCM...">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <input type="number" id="limit" value="20" placeholder="Số lượng">
+                        </div>
+                        <div class="form-group">
+                            <select id="scrapeMode">
+                                <option value="all">Tất cả</option>
+                                <option value="no_website">Không web</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="startBtn">▶️ Bắt đầu</button>
+                        <button class="btn btn-danger" id="stopBtn" disabled>⏹️ Dừng</button>
+                    </div>
+                </div>
+
+                <div class="progress-card" id="progressCard" style="display: none;">
+                    <div class="progress-info">
+                        <span id="progressStatus">Đang khởi tạo...</span>
+                        <span id="progressCount">0/0</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+
+                <div class="results-card" id="resultsCard" style="display: none;">
+                    <div class="results-header">
+                        <h3>📊 Kết quả (<span id="resultCount">0</span>)</h3>
+                    </div>
+                    <div class="filter-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="filterNoWebsite">
+                            <span>Chưa có web</span>
+                        </label>
+                    </div>
+                    <div class="results-list" id="resultsList"></div>
+                </div>
+            </section>
+
+            <section class="tab-content active" id="tab-leads">
+                <div class="card">
+                    <div class="form-group">
+                        <input type="search" id="leadSearch" placeholder="Tìm tên doanh nghiệp, địa chỉ, số điện thoại">
+                    </div>
+                    <div class="filter-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="filterNoWebsiteAll">
+                            <span>Chưa có web</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="filterHasPhone">
+                            <span>Có SĐT</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="filterContacted">
+                            <span>Chưa liên hệ</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="leads-list" id="leadsList"></div>
+            </section>
+
+            <section class="tab-content" id="tab-history">
+                <div class="history-list" id="historyList"></div>
+            </section>
+        </main>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <script src="app.js"></script>
+</body>
+</html>
