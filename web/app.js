@@ -274,7 +274,7 @@ function renderLeadCard(item, options = {}) {
     const source = [item.keyword, item.location].filter(Boolean).join(' - ');
 
     return `
-        <article class="lead-item ${!item.has_website && !item.hasWebsite ? 'no-website' : ''} ${contacted ? 'contacted' : ''} ${callStatus ? 'has-call-status' : ''}">
+        <article class="lead-item ${!item.has_website && !item.hasWebsite ? 'no-website' : ''} ${!callStatus && contacted ? 'contacted' : ''} ${callStatus ? 'has-call-status' : ''}">
             <div class="lead-main">
                 <label class="called-toggle" title="${contacted ? 'Đã gọi' : 'Chưa gọi'}">
                     <input type="checkbox" ${contacted ? 'checked' : ''} onchange="toggleContacted(${item.id}, this.checked)">
