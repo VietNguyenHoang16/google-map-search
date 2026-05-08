@@ -1,0 +1,29 @@
+{
+    "version": 2,
+    "installCommand": "PUPPETEER_SKIP_DOWNLOAD=true npm install --production",
+    "builds": [
+        {
+            "src": "api/index.js",
+            "use": "@vercel/node"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/(.*)",
+            "dest": "api/index.js"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "/web/$1",
+            "check": {
+                "source": "header",
+                "key": "x-vercel-cache",
+                "value": "miss"
+            }
+        },
+        {
+            "src": "/(.*)",
+            "dest": "api/index.js"
+        }
+    ]
+}
