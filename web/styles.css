@@ -4,6 +4,8 @@
     --danger: #EF4444;
     --warning: #F59E0B;
     --success: #10B981;
+    --info: #6366f1;
+    --closed: #8B5CF6;
     --bg: #F3F4F6;
     --card-bg: #FFFFFF;
     --text: #1F2937;
@@ -384,7 +386,9 @@ body {
 }
 
 .call-btn,
-.contact-btn {
+.contact-btn,
+.search-btn,
+.call-status-label select {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -416,6 +420,55 @@ body {
     background: var(--success);
     border-color: var(--success);
     color: white;
+}
+
+.call-status-label {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.call-status-label select {
+    width: 100%;
+    min-width: 0;
+    background: white;
+    color: var(--text);
+    border-color: var(--border);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.lead-badge.call-status {
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.lead-badge.call-status.no_answer {
+    color: #EF4444;
+    border-color: #EF4444;
+    background-color: #FEF2F2;
+}
+
+.lead-badge.call-status.rejected {
+    color: #F59E0B;
+    border-color: #F59E0B;
+    background-color: #FFFbEB;
+}
+
+.lead-badge.call-status.contact_later {
+    color: #2563EB;
+    border-color: #2563EB;
+    background-color: #EFF6FF;
+}
+
+.lead-badge.call-status.closed {
+    color: var(--closed);
+    border-color: var(--closed);
+    background-color: #F5F3FF;
 }
 
 .delete-link {

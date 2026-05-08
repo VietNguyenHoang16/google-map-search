@@ -6,6 +6,13 @@ let searchHistory = [];
 let isScanning = false;
 let activeTab = 'leads';
 let lastSyncAt = 0;
+const CALL_STATUS_OPTIONS = [
+    { value: '', label: 'Chưa có trạng thái' },
+    { value: 'no_answer', label: 'Không bốc máy' },
+    { value: 'rejected', label: 'Từ chối' },
+    { value: 'contact_later', label: 'Liên hệ sau' },
+    { value: 'closed', label: 'Đã nghỉ kinh doanh' }
+];
 
 const elements = {
     keyword: document.getElementById('keyword'),
@@ -214,7 +221,7 @@ function renderResults(data) {
     elements.resultCount.textContent = filtered.length;
 
     if (filtered.length === 0) {
-        elements.resultsList.innerHTML = '<div class="empty-state">Khong co du lieu</div>';
+        elements.resultsList.innerHTML = '<div class="empty-state">Không có dữ liệu</div>';
         return;
     }
 
@@ -251,7 +258,7 @@ function renderLeads() {
     }
 
     if (filtered.length === 0) {
-        elements.leadsList.innerHTML = '<div class="empty-state">Chua co lead phu hop</div>';
+        elements.leadsList.innerHTML = '<div class="empty-state">Chưa có lead phù hợp</div>';
         return;
     }
 
@@ -261,13 +268,15 @@ function renderLeads() {
 function renderLeadCard(item, options = {}) {
     const phone = item.phone || '';
     const contacted = Boolean(Number(item.contacted));
-    const websiteText = item.has_website || item.hasWebsite ? 'Co web' : 'Chua web';
+    const callStatus = getCallStatusValue(item);
+    const callStatusLabel = getCallStatusLabel(callStatus);
+    const websiteText = item.has_website || item.hasWebsite ? 'Có web' : 'Chưa web';
     const source = [item.keyword, item.location].filter(Boolean).join(' - ');
 
     return `
-        <article class="lead-item ${!item.has_website && !item.hasWebsite ? 'no-website' : ''} ${contacted ? 'contacted' : ''}">
+        <article class="lead-item ${!item.has_website && !item.hasWebsite ? 'no-website' : ''} ${contacted ? 'contacted' : ''} ${callStatus ? 'has-call-status' : ''}">
             <div class="lead-main">
-                <label class="called-toggle" title="${contacted ? 'Da goi' : 'Chua goi'}">
+                <label class="called-toggle" title="${contacted ? 'Đã gọi' : 'Chưa gọi'}">
                     <input type="checkbox" ${contacted ? 'checked' : ''} onchange="toggleContacted(${item.id}, this.checked)">
                     <span></span>
                 </label>
@@ -278,21 +287,46 @@ function renderLeadCard(item, options = {}) {
             </div>
 
             <div class="lead-actions">
-                ${phone ? `<a class="call-btn" href="${escapeAttr(telHref(phone))}" onclick="markCalledAfterTap(${item.id})">Goi ${escapeHtml(phone)}</a>` : '<span class="call-btn disabled">Khong co SĐT</span>'}
+                ${phone ? `<a class="call-btn" href="${escapeAttr(telHref(phone))}" onclick="markCalledAfterTap(${item.id})">Gọi ${escapeHtml(phone)}</a>` : '<span class="call-btn disabled">Không có SĐT</span>'}
                 <button class="contact-btn ${contacted ? 'done' : ''}" onclick="toggleContacted(${item.id}, ${!contacted})">
-                    ${contacted ? 'Da goi' : 'Tick da goi'}
+                    ${contacted ? 'Đã gọi' : 'Tick đã gọi'}
                 </button>
+                <button class="search-btn" onclick="searchLeadInfo(${item.id})" title="Tìm kiếm thông tin về lead này">Tìm kiếm</button>
+                <label class="call-status-label">
+                    <span>Trạng thái phụ</span>
+                    <select onchange="updateCallStatus(${item.id}, this.value)">
+                        ${renderCallStatusOptions(callStatus)}
+                    </select>
+                </label>
             </div>
 
             <div class="lead-info">
                 <span class="lead-badge ${item.has_website || item.hasWebsite ? 'website has' : 'website no'}">${websiteText}</span>
+                ${callStatus ? `<span class="lead-badge call-status ${callStatus}">${escapeHtml(callStatusLabel)}</span>` : ''}
                 ${item.rating ? `<span class="lead-badge">Rating ${escapeHtml(String(item.rating))}</span>` : ''}
                 ${source ? `<span class="lead-badge source">${escapeHtml(source)}</span>` : ''}
             </div>
 
-            ${options.allowDelete ? `<button class="delete-link" onclick="deleteLead(${item.id})">Xoa lead</button>` : ''}
+            ${options.allowDelete ? `<button class="delete-link" onclick="deleteLead(${item.id})">Xóa lead</button>` : ''}
         </article>
     `;
+}
+
+function renderCallStatusOptions(selectedValue) {
+    return CALL_STATUS_OPTIONS.map(option => `
+        <option value="${escapeAttr(option.value)}" ${option.value === selectedValue ? 'selected' : ''}>
+            ${escapeHtml(option.label)}
+        </option>
+    `).join('');
+}
+
+function getCallStatusValue(item) {
+    const value = item?.call_status || item?.callStatus || '';
+    return CALL_STATUS_OPTIONS.some(option => option.value === value) ? value : '';
+}
+
+function getCallStatusLabel(value) {
+    return CALL_STATUS_OPTIONS.find(option => option.value === value)?.label || '';
 }
 
 async function loadHistory() {
@@ -321,21 +355,71 @@ function renderHistory() {
 }
 
 async function toggleContacted(leadId, contacted) {
-    const lead = allLeads.find(item => item.id === leadId);
-    if (lead) lead.contacted = contacted ? 1 : 0;
-    renderLeads();
+    const lead = findLeadById(leadId);
+    const previous = lead ? { contacted: lead.contacted, call_status: lead.call_status } : null;
+    if (lead) {
+        lead.contacted = contacted ? 1 : 0;
+        if (!contacted) lead.call_status = null;
+    }
+    refreshLeadViews();
 
-    const result = await apiCall(`/api/leads/${leadId}/contacted`, 'PUT', { contacted });
+    const result = await apiCall(`/api/leads/${leadId}/contacted`, 'PUT', {
+        contacted,
+        callStatus: contacted ? getCallStatusValue(lead) : ''
+    });
     if (result.success) {
-        showToast(contacted ? 'Da tick da goi' : 'Da bo tick', 'success');
+        showToast(contacted ? 'Đã tick đã gọi' : 'Đã bỏ tick', 'success');
         const stats = await apiCall('/api/stats');
         if (stats.success) updateStats(stats.data);
         if (elements.filterContacted?.checked) await loadAllLeads({ silent: true });
     } else {
-        if (lead) lead.contacted = contacted ? 0 : 1;
-        renderLeads();
+        if (lead && previous) {
+            lead.contacted = previous.contacted;
+            lead.call_status = previous.call_status;
+        }
+        refreshLeadViews();
         showToast(`Loi: ${result.error}`, 'error');
     }
+}
+
+async function updateCallStatus(leadId, callStatus) {
+    const lead = findLeadById(leadId);
+    const previous = lead ? { contacted: lead.contacted, call_status: lead.call_status } : null;
+    const nextCallStatus = CALL_STATUS_OPTIONS.some(option => option.value === callStatus) ? callStatus : '';
+
+    if (lead) {
+        lead.call_status = nextCallStatus || null;
+        if (nextCallStatus) lead.contacted = 1;
+    }
+    refreshLeadViews();
+
+    const result = await apiCall(`/api/leads/${leadId}/contacted`, 'PUT', {
+        contacted: lead ? Boolean(Number(lead.contacted)) : Boolean(nextCallStatus),
+        callStatus: nextCallStatus
+    });
+
+    if (result.success) {
+        showToast(nextCallStatus ? `Đã lưu: ${getCallStatusLabel(nextCallStatus)}` : 'Đã xóa trạng thái phụ', 'success');
+        const stats = await apiCall('/api/stats');
+        if (stats.success) updateStats(stats.data);
+        if (elements.filterContacted?.checked && nextCallStatus) await loadAllLeads({ silent: true });
+    } else {
+        if (lead && previous) {
+            lead.contacted = previous.contacted;
+            lead.call_status = previous.call_status;
+        }
+        refreshLeadViews();
+        showToast(`Loi: ${result.error}`, 'error');
+    }
+}
+
+function findLeadById(leadId) {
+    return allLeads.find(item => item.id === leadId) || currentResults.find(item => item.id === leadId);
+}
+
+function refreshLeadViews() {
+    if (activeTab === 'leads') renderLeads();
+    if (currentResults.length > 0) renderResults(currentResults);
 }
 
 function markCalledAfterTap(leadId) {
@@ -404,8 +488,27 @@ function showToast(message, type = 'success') {
     setTimeout(() => elements.toast.classList.remove('show'), 2500);
 }
 
+function searchLeadInfo(leadId) {
+    const lead = findLeadById(leadId);
+    if (!lead) {
+        showToast('Không tìm thấy lead', 'error');
+        return;
+    }
+
+    const searchQuery = `${lead.name || ''} ${lead.address || ''}`.trim();
+    if (!searchQuery) {
+        showToast('Không đủ thông tin để tìm kiếm', 'error');
+        return;
+    }
+
+    const googleSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
+    window.open(googleSearchUrl, '_blank', 'noopener');
+}
+
 window.toggleContacted = toggleContacted;
+window.updateCallStatus = updateCallStatus;
 window.markCalledAfterTap = markCalledAfterTap;
 window.deleteLead = deleteLead;
+window.searchLeadInfo = searchLeadInfo;
 
 init();
